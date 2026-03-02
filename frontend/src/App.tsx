@@ -2,10 +2,9 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Home from './pages/Home';
 import Analysis from './pages/Analysis';
+import ConstitutionAnalysis from './pages/ConstitutionAnalysis';
 import Body3D from './pages/Body3D';
 import UserManagement from './pages/admin/UserManagement';
-
-import Body2D from './pages/Body2D';
 
 function App() {
   return (
@@ -13,8 +12,8 @@ function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/analysis" element={<Analysis />} />
+        <Route path="/constitution-analysis" element={<ConstitutionAnalysis />} />
         <Route path="/3d-body" element={<Body3D />} />
-        <Route path="/2d-body" element={<Body2D />} />
         
         {/* Admin Routes */}
         <Route path="/admin" element={<Navigate to="/admin/users" replace />} />

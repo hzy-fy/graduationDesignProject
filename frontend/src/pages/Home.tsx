@@ -1,10 +1,63 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, CheckCircle } from 'lucide-react';
+import { authService } from '../services/auth';
+import { useAuthStore } from '../store/authStore';
 
 const Home: React.FC = () => {
-  const [isLogin, setIsLogin] = useState(true);
+  const [phone, setPhone] = useState('');
+  const [code, setCode] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [codeSent, setCodeSent] = useState(false);
   const navigate = useNavigate();
+  const { login } = useAuthStore();
+
+  const handleSendCode = async () => {
+    if (!phone) {
+      alert('请输入手机号');
+      return;
+    }
+    try {
+      setLoading(true);
+      await authService.sendCode(phone);
+      setCodeSent(true);
+      alert('验证码已发送 (开发环境默认 8888)');
+    } catch (error) {
+      alert('发送验证码失败');
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!phone || !code) {
+      alert('请输入手机号和验证码');
+      return;
+    }
+    
+    try {
+      setLoading(true);
+      const data = await authService.login(phone, code);
+      
+      // Store user data
+      login(data.token, { id: data.user_id, phone: data.phone, constitution: data.constitution }, data.is_first_login);
+      localStorage.setItem('token', data.token);
+      
+      // Redirect logic
+      if (data.is_first_login) {
+        navigate('/constitution-analysis');
+      } else {
+        navigate('/analysis');
+      }
+    } catch (error) {
+      alert('登录失败，请检查验证码');
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-background font-sans text-secondary">
@@ -17,7 +70,6 @@ const Home: React.FC = () => {
         {/* Logo */}
         <div className="absolute top-6 left-6 md:top-10 md:left-10 z-10 flex items-center gap-2">
           <img src="/favicon.png" alt="MedSafe AI" className="w-8 h-8 rounded-lg" />
-          {/* <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white font-bold">AI</div> */}
           <span className="text-xl font-bold tracking-tight">MedSafe AI</span>
         </div>
 
@@ -41,7 +93,7 @@ const Home: React.FC = () => {
             </div>
             <div className="flex items-center gap-3">
               <CheckCircle className="w-5 h-5 text-primary" />
-              <span>3D 可视化人体经脉与器官知识</span>
+              <span>3D 可视化人体经脉穴位知识</span>
             </div>
           </div>
 
@@ -61,76 +113,61 @@ const Home: React.FC = () => {
           </div>
         </div>
         
-        {/* 底部版权 (PC显示) */}
-        <div className="absolute bottom-6 left-6 md:left-10 text-xs text-gray-400 hidden md:block">
-          © 2024 MedSafe AI. All rights reserved. | 隐私政策 | 联系我们
-        </div>
       </div>
 
       {/* PC 端右侧 / 移动端底部：登录表单 (40%) */}
       <div className="w-full md:w-[40%] bg-white flex flex-col justify-center p-8 md:p-12 lg:p-16 shadow-2xl z-20">
         <div className="w-full max-w-md mx-auto">
           <div className="flex justify-between items-center mb-8">
-            <h2 className="text-2xl font-bold">{isLogin ? '欢迎回来' : '创建账号'}</h2>
-            <div className="text-sm">
-              {isLogin ? '没有账号？' : '已有账号？'}
-              <button 
-                onClick={() => setIsLogin(!isLogin)}
-                className="text-primary font-medium ml-1 hover:underline"
-              >
-                {isLogin ? '立即注册' : '去登录'}
-              </button>
+            <h2 className="text-2xl font-bold">欢迎使用 MedSafe AI</h2>
+            <div className="text-sm text-gray-500">
+               手机验证码快捷登录/注册
             </div>
           </div>
 
-          <form className="space-y-5" onSubmit={(e) => { e.preventDefault(); navigate('/analysis'); }}>
-            {!isLogin && (
-              <div>
-                <label className="block text-sm font-medium mb-1">用户名</label>
-                <input 
-                  type="text" 
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
-                  placeholder="请输入用户名"
-                />
-              </div>
-            )}
-            
+          <form className="space-y-5" onSubmit={handleSubmit}>
             <div>
               <label className="block text-sm font-medium mb-1">手机号</label>
               <input 
                 type="tel" 
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
                 placeholder="请输入手机号"
+                required
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-medium mb-1">密码</label>
-              <input 
-                type="password" 
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
-                placeholder="请输入密码"
-              />
+            <div className="flex gap-2">
+                <div className="flex-1">
+                    <label className="block text-sm font-medium mb-1">验证码</label>
+                    <input 
+                    type="text" 
+                    value={code}
+                    onChange={(e) => setCode(e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
+                    placeholder="请输入验证码"
+                    required
+                    />
+                </div>
+                <div className="flex items-end">
+                    <button 
+                        type="button" 
+                        onClick={handleSendCode}
+                        disabled={loading || codeSent}
+                        className="px-4 py-2 mb-[1px] h-[42px] text-primary border border-primary rounded-lg text-sm hover:bg-green-50 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                    >
+                        {codeSent ? '已发送' : '获取验证码'}
+                    </button>
+                </div>
             </div>
-
-            {!isLogin && (
-               <div className="flex gap-2">
-                 <input 
-                   type="text" 
-                   className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
-                   placeholder="验证码"
-                 />
-                 <button type="button" className="px-4 py-2 text-primary border border-primary rounded-lg text-sm hover:bg-green-50">
-                   获取验证码
-                 </button>
-               </div>
-            )}
 
             <button 
               type="submit" 
-              className="w-full py-3 bg-secondary text-white rounded-lg font-medium hover:bg-gray-800 transition-colors mt-4"
+              disabled={loading}
+              className="w-full py-3 bg-secondary text-white rounded-lg font-medium hover:bg-gray-800 transition-colors mt-4 disabled:opacity-70"
             >
-              {isLogin ? '登录' : '注册'}
+              {loading ? '登录中...' : '登录 / 注册'}
             </button>
           </form>
 

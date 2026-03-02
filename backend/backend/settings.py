@@ -1,3 +1,7 @@
+import os
+# 设置 Hugging Face 国内镜像，必须在任何 HF 相关库导入前设置
+os.environ["HF_ENDPOINT"] = "https://hf-mirror.com"
+
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -28,6 +32,7 @@ INSTALLED_APPS = [
     
     # Third party apps
     'rest_framework',
+    'rest_framework.authtoken', # Token Authentication
     'corsheaders',
     
     # Local apps
@@ -123,3 +128,15 @@ AUTH_USER_MODEL = 'core.User'
 
 # CORS Configuration
 CORS_ALLOW_ALL_ORIGINS = True # 开发环境允许所有来源
+
+# DRF Configuration
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.TokenAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+    ],
+    # 默认权限策略，可以根据 ViewSet 单独覆盖
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.AllowAny', 
+    ]
+}

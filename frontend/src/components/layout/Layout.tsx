@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, Search, User, Activity, Box, MessageCircle } from 'lucide-react';
+import { Menu, Search, User, Activity, Box, MessageCircle, LogOut } from 'lucide-react';
+import { useAuthStore } from '../../store/authStore';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -9,6 +10,7 @@ interface LayoutProps {
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   const location = useLocation();
   const isActive = (path: string) => location.pathname === path;
+  const { user, logout } = useAuthStore();
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -30,22 +32,16 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               药物分析
             </Link>
             <Link 
+              to="/constitution-analysis" 
+              className={`text-sm font-medium transition-colors hover:text-primary ${isActive('/constitution-analysis') ? 'text-primary' : 'text-gray-600'}`}
+            >
+              体质辨识
+            </Link>
+            <Link 
               to="/3d-body" 
               className={`text-sm font-medium transition-colors hover:text-primary ${isActive('/3d-body') ? 'text-primary' : 'text-gray-600'}`}
             >
               3D人体
-            </Link>
-            <Link 
-              to="/2d-body" 
-              className={`text-sm font-medium transition-colors hover:text-primary ${isActive('/2d-body') ? 'text-primary' : 'text-gray-600'}`}
-            >
-              2D图谱
-            </Link>
-            <Link 
-              to="#" 
-              className="text-sm font-medium text-gray-600 transition-colors hover:text-primary"
-            >
-              智能问答
             </Link>
           </nav>
 
@@ -61,9 +57,28 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
           {/* 右侧用户菜单 (PC) */}
           <div className="hidden md:flex items-center gap-4">
-            <button className="p-2 hover:bg-gray-100 rounded-full">
-              <User className="w-5 h-5 text-gray-600" />
-            </button>
+            {user ? (
+              <div className="flex items-center gap-3">
+                <div className="flex flex-col items-end">
+                    <span className="text-sm font-medium text-gray-700">{user.phone}</span>
+                    <span className="text-xs text-gray-400">已登录</span>
+                </div>
+                <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center text-primary">
+                    <User className="w-4 h-4" />
+                </div>
+                <button 
+                  onClick={() => { logout(); window.location.href = '/'; }}
+                  className="p-2 hover:bg-red-50 hover:text-red-500 rounded-full transition-colors ml-2"
+                  title="退出登录"
+                >
+                  <LogOut className="w-5 h-5" />
+                </button>
+              </div>
+            ) : (
+              <Link to="/" className="px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-green-600 transition-colors">
+                登录 / 注册
+              </Link>
+            )}
           </div>
 
           {/* 移动端菜单按钮 */}
